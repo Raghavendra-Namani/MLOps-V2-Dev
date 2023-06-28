@@ -1,24 +1,72 @@
-# imports
-import os
-import mlflow
+# import libraries
 import argparse
-from pathlib import Path
 import pandas as pd
+import numpy as np
+from pathlib import Path
+from sklearn.preprocessing import MinMaxScaler
 
-from sklearn.svm import SVC
-from sklearn.model_selection import train_test_split
+def main(args):
+    # read data
+    df = get_data(args.input_data)
 
-parser = argparse.ArgumentParser()
+    cleaned_data = clean_data(df)
 
-parser.add_argument("--model", type=str)
-parser.add_argument("--test_data", type=str)
-parser.add_argument("--predict_result", type=str)
+    normalized_data = normalize_data(cleaned_data)
 
-args = parser.parse_args()
+    output_df = normalized_data.to_csv((Path(args.output_data) / "diabetes.csv"), index = False)
 
-X_test = pd.read_csv(Path(args.test_data) / "X_test.csv")
-model = mlflow.sklearn.load_model(Path(args.model))
-y_test = pd.read_csv(Path(args.test_data) / "y_test.csv")
-y_test["predict"] = model.predict(X_test)
+# function that reads the data
+def get_data(path):
+    df = pd.read_csv(path)
 
-y_test.to_csv(Path(args.predict_result) / "predict_result.csv")
+    # Count the rows and print the result
+    row_count = (len(df))
+    print('Preparing {} rows of data'.format(row_count))
+    
+    return df
+
+# function that removes missing values
+def clean_data(df):
+    df = df.dropna()
+    
+    return df
+
+# function that normalizes the data
+def normalize_data(df):
+    scaler = MinMaxScaler()
+    num_cols = ['Pregnancies','PlasmaGlucose','DiastolicBloodPressure','TricepsThickness','SerumInsulin','BMI','DiabetesPedigree']
+    df[num_cols] = scaler.fit_transform(df[num_cols])
+
+    return df
+
+def parse_args():
+    # setup arg parser
+    parser = argparse.ArgumentParser()
+
+    # add arguments
+    parser.add_argument("--input_data", dest='input_data',
+                        type=str)
+    parser.add_argument("--output_data", dest='output_data',
+                        type=str)
+
+    # parse args
+    args = parser.parse_args()
+
+    # return args
+    return args
+
+# run script
+if __name__ == "__main__":
+    # add space in logs
+    print("\n\n")
+    print("*" * 60)
+
+    # parse args
+    args = parse_args()
+
+    # run main function
+    main(args)
+
+    # add space in logs
+    print("*" * 60)
+    print("\n\n")
